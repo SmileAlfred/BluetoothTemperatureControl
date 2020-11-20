@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/dynamic_chart1"
+                android:layout_width="match_parent"
+                android:layout_height="300dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btn_add_entry"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:onClick="addEntry"
+                    android:text="随机数据" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_margin="6dp"
+                    android:background="#33AA00A0"
+                    android:padding="3dp"
+                    android:text="功率:"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:id="@+id/tv_power"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="6dp"
+                    android:layout_weight="1"
+                    android:background="#33AA00A0"
+                    android:gravity="center"
+                    android:textSize="18sp" />
+
+                <EditText
+                    android:id="@+id/et_popup_item_order"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_margin="6dp"
+                    android:layout_weight="1"
+                    android:background="#33AAAA00"
+                    android:textSize="18sp" />
+
+                <Button
+                    android:id="@+id/btn_send_order"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:text="发送命令"
+                    android:textSize="18sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <AutoCompleteTextView
+                    android:id="@+id/et_bluetooth_ip"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="6dp"
+                    android:layout_weight="2"
+                    android:hint="蓝牙物理地址 如\n14A32F63EBFA"
+                    android:textSize="18sp" />
+
+                <Button
+                    android:id="@+id/btn_connect_bluetooth"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:text="连接"
+                    android:textSize="18sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
