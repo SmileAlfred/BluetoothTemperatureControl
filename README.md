@@ -1,0 +1,2 @@
+# BluetoothTemperatureControl
+连接制定物理地址的蓝牙设备进行数据的传输和显示（给李家琨老师）
