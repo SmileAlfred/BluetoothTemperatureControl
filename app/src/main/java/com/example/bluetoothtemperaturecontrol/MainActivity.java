@@ -22,7 +22,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.TextureView;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -31,6 +30,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.bluetoothtemperaturecontrol.view.PasswordInputView;
 import com.github.mikephil.charting.charts.LineChart;
 
 import java.io.IOException;
@@ -52,14 +52,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private List<Integer> list = new ArrayList<>(); //数据集合
     private List<String> names = new ArrayList<>(); //折线名字集合
     private List<Integer> colour = new ArrayList<>();//折线颜色集合
-    private EditText edit_text_popup_item_order;
+    private EditText et_popup_item_order;
     private AutoCompleteTextView et_bluetooth_ip;
+    private PasswordInputView et_set_temp, et_set_p_para, et_set_i_para, et_set_d_para, et_set_pianzhi;
     private TextView tv_power;
 
     /**
      * 蓝牙相关
      */
-    private Button btn_send_order, btn_connect_bluetooth;
+    private Button btn_send_order, btn_connect_bluetooth, btn_set_zheng_temp, btn_set_fu_temp,
+            btn_set_p_para, btn_set_i_para, btn_set_d_para, btn_set_zheng_pianzhi, btn_set_fu_pianzhi,
+            btn_get_temp, btn_get_pianzhi, btn_get_pid, btn_reset_pid;
     private BluetoothAdapter _bluetoothAdapter;
     private BluetoothManager mBluetoothManager;
     static BluetoothDevice _device = null;     //蓝牙设备
@@ -89,6 +92,37 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         registerReceiver(mReceiver, new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED));
         dTask = new DownloadTask();
         dTask.execute(100);
+
+        et_set_temp.setInputListener(new PasswordInputView.InputListener() {
+            @Override
+            public void onInputCompleted(String text) {
+                //TODO:对输入框的监听
+            }
+        });
+        et_set_p_para.setInputListener(new PasswordInputView.InputListener() {
+            @Override
+            public void onInputCompleted(String text) {
+                //TODO:对输入框的监听
+            }
+        });
+        et_set_i_para.setInputListener(new PasswordInputView.InputListener() {
+            @Override
+            public void onInputCompleted(String text) {
+                //TODO:对输入框的监听
+            }
+        });
+        et_set_d_para.setInputListener(new PasswordInputView.InputListener() {
+            @Override
+            public void onInputCompleted(String text) {
+                //TODO:对输入框的监听
+            }
+        });
+        et_set_pianzhi.setInputListener(new PasswordInputView.InputListener() {
+            @Override
+            public void onInputCompleted(String text) {
+                //TODO:对输入框的监听
+            }
+        });
     }
 
     private void initChart() {
@@ -137,7 +171,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         tv_power = findViewById(R.id.tv_power);
         et_bluetooth_ip = (AutoCompleteTextView) findViewById(R.id.et_bluetooth_ip);
-
+        et_set_temp = findViewById(R.id.et_set_temp);
+        et_set_p_para = findViewById(R.id.et_set_p_para);
+        et_set_i_para = findViewById(R.id.et_set_i_para);
+        et_set_d_para = findViewById(R.id.et_set_d_para);
+        et_set_pianzhi = findViewById(R.id.et_set_pianzhi);
         String[] autoStrings = new String[]{"联合国", "联合国安理会", "联合国五个常任理事国",
                 "Google", "Google Map"};
         // 第二个参数表示适配器的下拉风格
@@ -146,10 +184,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         et_bluetooth_ip.setAdapter(adapter);
 
         btn_connect_bluetooth = findViewById(R.id.btn_connect_bluetooth);
+        btn_set_zheng_temp = findViewById(R.id.btn_set_zheng_temp);
+        btn_set_fu_temp = findViewById(R.id.btn_set_fu_temp);
+        btn_set_p_para = findViewById(R.id.btn_set_p_para);
+        btn_set_i_para = findViewById(R.id.btn_set_i_para);
+        btn_set_d_para = findViewById(R.id.btn_set_d_para);
+        btn_set_zheng_pianzhi = findViewById(R.id.btn_set_zheng_pianzhi);
+        btn_set_fu_pianzhi = findViewById(R.id.btn_set_fu_pianzhi);
+        btn_get_temp = findViewById(R.id.btn_get_temp);
+        btn_get_pianzhi = findViewById(R.id.btn_get_pianzhi);
+        btn_get_pid = findViewById(R.id.btn_get_pid);
+        btn_reset_pid = findViewById(R.id.btn_reset_pid);
+
         btn_connect_bluetooth.setOnClickListener(this);
+        btn_set_zheng_temp.setOnClickListener(this);
+        btn_set_fu_temp.setOnClickListener(this);
+        btn_set_p_para.setOnClickListener(this);
+        btn_set_i_para.setOnClickListener(this);
+        btn_set_d_para.setOnClickListener(this);
+        btn_set_zheng_pianzhi.setOnClickListener(this);
+        btn_get_temp.setOnClickListener(this);
+        btn_get_pianzhi.setOnClickListener(this);
+        btn_get_pid.setOnClickListener(this);
+        btn_reset_pid.setOnClickListener(this);
+        btn_set_fu_pianzhi.setOnClickListener(this);
 
         mChart1 = (LineChart) findViewById(R.id.dynamic_chart1);
-        edit_text_popup_item_order = findViewById(R.id.et_popup_item_order);
+        et_popup_item_order = findViewById(R.id.et_popup_item_order);
         btn_send_order = findViewById(R.id.btn_send_order);
         btn_send_order.setOnClickListener(this);
     }
@@ -191,15 +252,183 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     return;
                 }
                 //TODO:发送命令
-                String order = edit_text_popup_item_order.getText().toString();
+                String order = et_popup_item_order.getText().toString();
                 try {
                     if (null == _socket) return;
-                    os.write(new String(order).getBytes());
+                    os.write(order.getBytes());
                     os.flush();
                 } catch (IOException e) {
                     Log.i(TAG, "onClick: 报错：" + e.getMessage());
                 }
                 Log.i(TAG, "onClick: _socket = " + _socket);
+                break;
+            case R.id.btn_set_zheng_temp:
+                //TODO:设定正温度
+                if (os == null) {
+                    Toast.makeText(this, "蓝牙没连接", 1000).show();
+                    return;
+                }
+                String zhengTemp = et_set_temp.getText().toString();
+                try {
+                    if (null == _socket) return;
+                    os.write(("S" + zhengTemp).getBytes());
+                    os.flush();
+                } catch (IOException e) {
+                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
+                }
+
+                StringBuilder sb = new StringBuilder(zhengTemp);
+                sb.insert(2, ".");
+                String marStrNew = sb.toString();
+                Toast.makeText(MainActivity.this, "设定了正温度：" + marStrNew, Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.btn_set_fu_temp:
+                //TODO:设定负温度
+                if (os == null) {
+                    Toast.makeText(this, "蓝牙没连接", 1000).show();
+                    return;
+                }
+                String fuTemp = et_set_temp.getText().toString();
+                if (Integer.parseInt(fuTemp) > 6000) {
+                    Toast.makeText(MainActivity.this, "请输入 0000 ~ 6000 之间的整数！", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                try {
+                    if (null == _socket) return;
+                    os.write(("S-" + fuTemp).getBytes());
+                    os.flush();
+                } catch (IOException e) {
+                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
+                }
+
+                StringBuilder sbFuTemp = new StringBuilder(fuTemp);
+                sbFuTemp.insert(2, ".");
+                String newFuTemp = sbFuTemp.toString();
+                Toast.makeText(MainActivity.this, "设定了负温度：- " + newFuTemp, Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.btn_set_p_para:
+                //TODO:设定 P 参数
+                if (os == null) {
+                    Toast.makeText(this, "蓝牙没连接", 1000).show();
+                    return;
+                }
+                String pPara = et_set_p_para.getText().toString();
+                try {
+                    if (null == _socket) return;
+                    os.write(("SP" + pPara).getBytes());
+                    os.flush();
+                } catch (IOException e) {
+                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
+                }
+
+                StringBuilder sbPPara = new StringBuilder(pPara);
+                sbPPara.insert(2, ".");
+                String newPPara = sbPPara.toString();
+                Toast.makeText(MainActivity.this, "设定了 P 参数：" + newPPara, Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.btn_set_i_para:
+                //TODO:设定 I 参数
+                if (os == null) {
+                    Toast.makeText(this, "蓝牙没连接", 1000).show();
+                    return;
+                }
+                String iPara = et_set_i_para.getText().toString();
+                try {
+                    if (null == _socket) return;
+                    os.write(("SI" + iPara).getBytes());
+                    os.flush();
+                } catch (IOException e) {
+                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
+                }
+
+                StringBuilder sbIPara = new StringBuilder(iPara);
+                sbIPara.insert(2, ".");
+                String newIPara = sbIPara.toString();
+                Toast.makeText(MainActivity.this, "设定了 I 参数：" + newIPara, Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.btn_set_d_para:
+                //TODO:设定 D 参数
+                if (os == null) {
+                    Toast.makeText(this, "蓝牙没连接", 1000).show();
+                    return;
+                }
+                String dPara = et_set_d_para.getText().toString();
+                try {
+                    if (null == _socket) return;
+                    os.write(("SD" + dPara).getBytes());
+                    os.flush();
+                } catch (IOException e) {
+                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
+                }
+
+                StringBuilder sbDPara = new StringBuilder(dPara);
+                sbDPara.insert(2, ".");
+                String newDPara = sbDPara.toString();
+                Toast.makeText(MainActivity.this, "设定了 D 参数：" + newDPara, Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.btn_set_zheng_pianzhi:
+                //TODO:设定了正偏置
+                if (os == null) {
+                    Toast.makeText(this, "蓝牙没连接", 1000).show();
+                    return;
+                }
+                String zhengPianzhi = et_set_pianzhi.getText().toString();
+                if (Integer.parseInt(zhengPianzhi) > 1000) {
+                    Toast.makeText(MainActivity.this, "请输入 0 ~ 1000 内的整数", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                try {
+                    if (null == _socket) return;
+                    os.write(("SA" + zhengPianzhi).getBytes());
+                    os.flush();
+                } catch (IOException e) {
+                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
+                }
+
+                StringBuilder sbZhengPianzhi = new StringBuilder(zhengPianzhi);
+                sbZhengPianzhi.insert(2, ".");
+                String newZhengPianzhi = sbZhengPianzhi.toString();
+                Toast.makeText(MainActivity.this, "设定了正偏置：" + newZhengPianzhi, Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.btn_set_fu_pianzhi:
+                //TODO:设定了负偏置
+                if (os == null) {
+                    Toast.makeText(this, "蓝牙没连接", 1000).show();
+                    return;
+                }
+                String fuPianzhi = et_set_pianzhi.getText().toString();
+                if (Integer.parseInt(fuPianzhi) > 1000) {
+                    Toast.makeText(MainActivity.this, "请输入 0 ~ 1000 内的整数", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                try {
+                    if (null == _socket) return;
+                    os.write(("SA-" + fuPianzhi).getBytes());
+                    os.flush();
+                } catch (IOException e) {
+                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
+                }
+
+                StringBuilder sbFuPianzhi = new StringBuilder(fuPianzhi);
+                sbFuPianzhi.insert(2, ".");
+                String newFuPianzhi = sbFuPianzhi.toString();
+                Toast.makeText(MainActivity.this, "设定了负偏置：- " + newFuPianzhi, Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.btn_get_temp:
+                //TODO:获取环境温度
+                Toast.makeText(MainActivity.this, "获取环境温度", Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.btn_get_pianzhi:
+                //TODO:获取温度偏置量
+                Toast.makeText(MainActivity.this, "获取温度偏置量：", Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.btn_get_pid:
+                //TODO:获取 PID 参数
+                Toast.makeText(MainActivity.this, "获取 PID 参数：", Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.btn_reset_pid:
+                //TODO:重置 PID 参数
+                Toast.makeText(MainActivity.this, "重置了 PID 参数：", Toast.LENGTH_SHORT).show();
                 break;
             default:
                 break;
@@ -395,6 +624,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         buffer = new byte[time];
                         if (is != null) is.read(buffer);
                         String receivedMsg = new String(buffer);
+
+
+                        //TODO:绘图
                         if (receivedMsg.contains("TEMP")) {
                             receivedMsg = receivedMsg.replaceAll("TEMP:", "");
                             float f = Float.parseFloat(receivedMsg);
@@ -406,6 +638,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             msg.obj = receivedMsg.replaceAll("POWER:", "");
                             handler.sendMessage(msg);
                         }
+
+                        if (receivedMsg.contains("CPV:")) {
+                            Message msg = new Message();
+                            msg.what = RC;
+                            msg.obj = receivedMsg.replaceAll("CPV:", "");
+                            handler.sendMessage(msg);
+                        }
+
+                        if (receivedMsg.contains("Offset Temp:")) {
+                            Message msg = new Message();
+                            msg.what = RA;
+                            msg.obj = receivedMsg.replaceAll("Offset Temp:", "");
+                            handler.sendMessage(msg);
+                        }
+
+                        if (receivedMsg.contains("P:")&&receivedMsg.contains("I:")&&receivedMsg.contains("D:")) {
+                            Message msg = new Message();
+                            msg.what = RF;
+                            msg.obj = receivedMsg.replace("P:","").replace("I","").replace("D","");
+                            handler.sendMessage(msg);
+                        }
+
                     }
                 } catch (IOException e) {
                     break;
@@ -413,12 +667,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     };
+
+    StringBuilder sb = new StringBuilder("temp");
+    String marStrNew;
     Handler handler = new Handler() {
         @Override
         public void handleMessage(@NonNull Message msg) {
             switch (msg.what) {
                 case POWER:
                     tv_power.setText(msg.obj.toString());
+                    break;
+                case RC:
+                    et_set_temp.setText(msg.obj.toString());
+                    /*sb = new StringBuilder(msg.obj.toString());
+                    sb.insert(2, ".");
+                    marStrNew = sb.toString();
+                    et_popup_item_order.setText(marStrNew + "℃");*/
+                    break;
+                case RA:
+                    et_set_pianzhi.setText(msg.obj.toString());
+                    break;
+                case RF:
+                    String[] strs = msg.obj.toString().split(":");
+                    et_set_p_para.setText(strs[0]);
+                    et_set_i_para.setText(strs[1]);
+                    et_set_d_para.setText(strs[2]);
                     break;
                 default:
                     break;
@@ -427,6 +700,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     };
 
     private static final int POWER = 4;
+    private static final int RC = 5;
+    private static final int RA = 6;
+    private static final int RF = 7;
 
     private BlueToothReceiver mReceiver = new BlueToothReceiver() {
         @Override

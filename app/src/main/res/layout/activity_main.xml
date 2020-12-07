@@ -29,6 +29,7 @@
                 <Button
                     android:id="@+id/btn_add_entry"
                     android:layout_width="0dp"
+                    android:visibility="gone"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:onClick="addEntry"
@@ -94,7 +95,219 @@
                     android:text="连接"
                     android:textSize="18sp" />
             </LinearLayout>
+            <!--https://juejin.cn/post/6844903874575220750-->
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="6dp">
+
+                <com.example.bluetoothtemperaturecontrol.view.PasswordInputView
+                    android:id="@+id/et_set_temp"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:inputType="number"
+                    android:padding="1dp"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:pwv_haveInputBorderColor="@color/colorAccent"
+                    app:pwv_maxLength="4"
+                    app:pwv_pwdStyle="plaintext"
+                    app:pwv_radius="10dp"
+                    app:pwv_spacing="6dp" />
+
+                <Button
+                    android:id="@+id/btn_set_zheng_temp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="设定正温度"
+                    android:textSize="18sp" />
+
+                <Button
+                    android:id="@+id/btn_set_fu_temp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="设定负温度"
+                    android:textSize="18sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="6dp">
+
+                <com.example.bluetoothtemperaturecontrol.view.PasswordInputView
+                    android:id="@+id/et_set_pianzhi"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:inputType="number"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:padding="1dp"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:pwv_haveInputBorderColor="@color/colorAccent"
+                    app:pwv_maxLength="4"
+                    app:pwv_pwdStyle="plaintext"
+                    app:pwv_radius="10dp"
+                    app:pwv_spacing="6dp" />
+
+                <Button
+                    android:id="@+id/btn_set_zheng_pianzhi"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="设定正偏置"
+                    android:textSize="18sp" />
+
+                <Button
+                    android:id="@+id/btn_set_fu_pianzhi"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="设定负偏置"
+                    android:textSize="18sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="6dp">
+
+                <com.example.bluetoothtemperaturecontrol.view.PasswordInputView
+                    android:id="@+id/et_set_p_para"
+                    android:layout_width="0dp"
+                    android:inputType="number"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:padding="1dp"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:pwv_haveInputBorderColor="@color/colorAccent"
+                    app:pwv_maxLength="3"
+                    app:pwv_pwdStyle="plaintext"
+                    app:pwv_radius="10dp"
+                    app:pwv_spacing="6dp" />
+
+                <Button
+                    android:id="@+id/btn_set_p_para"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="设定 P"
+                    android:textSize="18sp" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="6dp">
+
+                <com.example.bluetoothtemperaturecontrol.view.PasswordInputView
+                    android:id="@+id/et_set_i_para"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:inputType="number"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:padding="1dp"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:pwv_haveInputBorderColor="@color/colorAccent"
+                    app:pwv_maxLength="3"
+                    app:pwv_pwdStyle="plaintext"
+                    app:pwv_radius="10dp"
+                    app:pwv_spacing="6dp" />
+
+                <Button
+                    android:id="@+id/btn_set_i_para"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="设定 I"
+                    android:textSize="18sp" />
+
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="6dp">
+
+                <com.example.bluetoothtemperaturecontrol.view.PasswordInputView
+                    android:id="@+id/et_set_d_para"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:inputType="number"
+                    android:background="@null"
+                    android:padding="1dp"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:pwv_haveInputBorderColor="@color/colorAccent"
+                    app:pwv_maxLength="3"
+                    app:pwv_pwdStyle="plaintext"
+                    app:pwv_radius="10dp"
+                    app:pwv_spacing="6dp" />
+
+                <Button
+                    android:id="@+id/btn_set_d_para"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="设定 D"
+                    android:textSize="18sp" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="6dp">
+
+                <Button
+                    android:id="@+id/btn_reset_pid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="重置PID"
+                    android:textSize="18sp" />
+
+                <Button
+                    android:id="@+id/btn_get_pid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="获取PID"
+                    android:textSize="18sp" />
+                <Button
+                    android:id="@+id/btn_get_pianzhi"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="获取偏置量"
+                    android:textSize="18sp" />
+                <Button
+                    android:id="@+id/btn_get_temp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="获取温度"
+                    android:textSize="18sp" />
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 
