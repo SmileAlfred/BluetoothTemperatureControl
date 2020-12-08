@@ -20,7 +20,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.text.Editable;
+import android.text.LoginFilter;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -33,12 +36,27 @@ import android.widget.Toast;
 import com.example.bluetoothtemperaturecontrol.view.PasswordInputView;
 import com.github.mikephil.charting.charts.LineChart;
 
+import org.w3c.dom.ls.LSException;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -49,7 +67,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      */
     private DynamicLineChartManager dynamicLineChartManager1;
     private LineChart mChart1;
-    private List<Integer> list = new ArrayList<>(); //数据集合
+    private List<Float> list = new ArrayList<>(); //数据集合
     private List<String> names = new ArrayList<>(); //折线名字集合
     private List<Integer> colour = new ArrayList<>();//折线颜色集合
     private EditText et_popup_item_order;
@@ -80,6 +98,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String date, time;
     private boolean bThread = false;
     private OutputStream os = null;
+    private String[] autoStrings;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,57 +146,62 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void initChart() {
         //折线名字
-        names.add("温度");
-        names.add("压强");
-        names.add("其他");
+        names.add("当前温度");
+        names.add("设定温度");
+        //names.add("其他");
         //折线颜色
-        colour.add(Color.CYAN);
-        colour.add(Color.GREEN);
         colour.add(Color.BLUE);
+        colour.add(Color.GRAY);
+        //colour.add(Color.RED);
 
-        dynamicLineChartManager1 = new DynamicLineChartManager(mChart1, names.get(0), colour.get(0));
-
+        dynamicLineChartManager1 = new DynamicLineChartManager(mChart1, names, colour);
         dynamicLineChartManager1.setYAxis(100, 0, 10);
-
-        //死循环添加数据
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            list.add((int) (Math.random() * 50) + 10);
-                            list.add((int) (Math.random() * 80) + 10);
-                            list.add((int) (Math.random() * 100));
-                            list.clear();
-                        }
-                    });
-                }
-            }
-        }).start();
     }
-
-    String[] autoStrings = new String[]{"联合国", "联合国安理会", "联合国五个常任理事国",
-            "Google", "Google Map"};
 
     private void findViews() {
         setContentView(R.layout.activity_main);
 
         tv_power = findViewById(R.id.tv_power);
         et_bluetooth_ip = (AutoCompleteTextView) findViewById(R.id.et_bluetooth_ip);
+
         et_set_temp = findViewById(R.id.et_set_temp);
         et_set_p_para = findViewById(R.id.et_set_p_para);
         et_set_i_para = findViewById(R.id.et_set_i_para);
         et_set_d_para = findViewById(R.id.et_set_d_para);
         et_set_pianzhi = findViewById(R.id.et_set_pianzhi);
-        String[] autoStrings = new String[]{"联合国", "联合国安理会", "联合国五个常任理事国",
-                "Google", "Google Map"};
+
+        //读取
+        try {
+            FileInputStream fis = openFileInput("blue_tooth_adress.txt");
+            InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
+            char[] input = new char[fis.available()];  //available()用于获取filename内容的长度
+            isr.read(input);  //读取并存储到input中
+
+            isr.close();
+            fis.close();//读取完成后关闭
+
+            String str = new String(input); //将读取并存放在input中的数据转换成String输出
+            try {
+                autoStrings = oneClear(str.split("\n"));
+            } catch (Exception e) {
+            }
+            if (TextUtils.isEmpty(str) || null == str) {
+                //写入
+                try {
+                    FileOutputStream fos = openFileOutput("blue_tooth_adress.txt", Context.MODE_APPEND);
+                    OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");
+                    osw.write("34:23:87:40:73:04\n" +
+                            "14:A3:2F:63:EB:FA\n");
+                    osw.flush();
+                    osw.close();
+                    autoStrings = new String[]{"34:23:87:40:73:04\n", "14:A3:2F:63:EB:FA\n"};
+                } catch (IOException e) {
+                }
+            }
+        } catch (IOException e) {
+        }
+
+        //autoStrings = new String[]{"14:A3:2F:63:EB:FA","34:23:87:40:73:04"};
         // 第二个参数表示适配器的下拉风格
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(MainActivity.this,
                 android.R.layout.simple_dropdown_item_1line, autoStrings);
@@ -215,7 +239,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btn_send_order.setOnClickListener(this);
     }
 
-    //按钮点击添加数据
+
+    //按钮点击添加 随机 数据
     public void addEntry(View view) {
         dynamicLineChartManager1.addEntry((int) (Math.random() * 100));
     }
@@ -223,11 +248,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
+
             case R.id.btn_connect_bluetooth:
-                if (et_bluetooth_ip.getText().toString().length() != 16) break;
-
                 HC05SAddress = formatAddress(et_bluetooth_ip.getText().toString());
-
+                if (HC05SAddress.length() != 17) {
+                    Toast.makeText(MainActivity.this, "蓝牙物理地址输入有误！", Toast.LENGTH_SHORT).show();
+                    break;
+                }
+                et_bluetooth_ip.setText(HC05SAddress);
+                et_bluetooth_ip.setSelection(HC05SAddress.length());
+                is = null;
                 isStop = true;
                 if (dTask != null) {
                     dTask.mCancle();
@@ -241,197 +271,116 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
 
                 if (_device != null) _device = null;
-                is = null;
                 isStop = false;
                 dTask = new DownloadTask();
                 dTask.execute(100);
                 break;
-            case R.id.btn_send_order:
-                if (os == null) {
-                    Toast.makeText(this, "蓝牙没连接", 1000).show();
-                    return;
-                }
-                //TODO:发送命令
-                String order = et_popup_item_order.getText().toString();
-                try {
-                    if (null == _socket) return;
-                    os.write(order.getBytes());
-                    os.flush();
-                } catch (IOException e) {
-                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
-                }
-                Log.i(TAG, "onClick: _socket = " + _socket);
-                break;
-            case R.id.btn_set_zheng_temp:
-                //TODO:设定正温度
-                if (os == null) {
-                    Toast.makeText(this, "蓝牙没连接", 1000).show();
-                    return;
-                }
-                String zhengTemp = et_set_temp.getText().toString();
-                try {
-                    if (null == _socket) return;
-                    os.write(("S" + zhengTemp).getBytes());
-                    os.flush();
-                } catch (IOException e) {
-                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
-                }
 
-                StringBuilder sb = new StringBuilder(zhengTemp);
-                sb.insert(2, ".");
-                String marStrNew = sb.toString();
-                Toast.makeText(MainActivity.this, "设定了正温度：" + marStrNew, Toast.LENGTH_SHORT).show();
+            //TODO:发送命令
+            case R.id.btn_send_order:
+                String order = et_popup_item_order.getText().toString();
+                sendOrder(order);
                 break;
+
+            //TODO:设定正温度
+            case R.id.btn_set_zheng_temp:
+                String zhengTemp = fillString(et_set_temp.getText().toString(), 4);
+                sendOrder("S" + zhengTemp);
+                break;
+
+            //TODO:设定负温度
             case R.id.btn_set_fu_temp:
-                //TODO:设定负温度
-                if (os == null) {
-                    Toast.makeText(this, "蓝牙没连接", 1000).show();
-                    return;
-                }
-                String fuTemp = et_set_temp.getText().toString();
+                String fuTemp = fillString(et_set_temp.getText().toString(), 4);
                 if (Integer.parseInt(fuTemp) > 6000) {
                     Toast.makeText(MainActivity.this, "请输入 0000 ~ 6000 之间的整数！", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                try {
-                    if (null == _socket) return;
-                    os.write(("S-" + fuTemp).getBytes());
-                    os.flush();
-                } catch (IOException e) {
-                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
-                }
+                sendOrder("S-" + fuTemp);
 
-                StringBuilder sbFuTemp = new StringBuilder(fuTemp);
+                /*StringBuilder sbFuTemp = new StringBuilder(fuTemp);
                 sbFuTemp.insert(2, ".");
-                String newFuTemp = sbFuTemp.toString();
-                Toast.makeText(MainActivity.this, "设定了负温度：- " + newFuTemp, Toast.LENGTH_SHORT).show();
+                String newFuTemp = sbFuTemp.toString();*/
                 break;
+
+            //TODO:设定 P 参数
             case R.id.btn_set_p_para:
-                //TODO:设定 P 参数
-                if (os == null) {
-                    Toast.makeText(this, "蓝牙没连接", 1000).show();
-                    return;
-                }
-                String pPara = et_set_p_para.getText().toString();
-                try {
-                    if (null == _socket) return;
-                    os.write(("SP" + pPara).getBytes());
-                    os.flush();
-                } catch (IOException e) {
-                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
-                }
-
-                StringBuilder sbPPara = new StringBuilder(pPara);
-                sbPPara.insert(2, ".");
-                String newPPara = sbPPara.toString();
-                Toast.makeText(MainActivity.this, "设定了 P 参数：" + newPPara, Toast.LENGTH_SHORT).show();
+                String pPara = fillString(et_set_p_para.getText().toString(), 3);
+                sendOrder("SP" + pPara);
                 break;
+
+            //TODO:设定 I 参数
             case R.id.btn_set_i_para:
-                //TODO:设定 I 参数
-                if (os == null) {
-                    Toast.makeText(this, "蓝牙没连接", 1000).show();
-                    return;
-                }
-                String iPara = et_set_i_para.getText().toString();
-                try {
-                    if (null == _socket) return;
-                    os.write(("SI" + iPara).getBytes());
-                    os.flush();
-                } catch (IOException e) {
-                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
-                }
-
-                StringBuilder sbIPara = new StringBuilder(iPara);
-                sbIPara.insert(2, ".");
-                String newIPara = sbIPara.toString();
-                Toast.makeText(MainActivity.this, "设定了 I 参数：" + newIPara, Toast.LENGTH_SHORT).show();
+                String iPara = fillString(et_set_i_para.getText().toString(), 3);
+                sendOrder("SI" + iPara);
                 break;
+
+            //TODO:设定 D 参数
             case R.id.btn_set_d_para:
-                //TODO:设定 D 参数
-                if (os == null) {
-                    Toast.makeText(this, "蓝牙没连接", 1000).show();
-                    return;
-                }
-                String dPara = et_set_d_para.getText().toString();
-                try {
-                    if (null == _socket) return;
-                    os.write(("SD" + dPara).getBytes());
-                    os.flush();
-                } catch (IOException e) {
-                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
-                }
-
-                StringBuilder sbDPara = new StringBuilder(dPara);
-                sbDPara.insert(2, ".");
-                String newDPara = sbDPara.toString();
-                Toast.makeText(MainActivity.this, "设定了 D 参数：" + newDPara, Toast.LENGTH_SHORT).show();
+                String dPara = fillString(et_set_d_para.getText().toString(), 3);
+                sendOrder("SD" + dPara);
                 break;
+
+            //TODO:设定了正偏置
             case R.id.btn_set_zheng_pianzhi:
-                //TODO:设定了正偏置
-                if (os == null) {
-                    Toast.makeText(this, "蓝牙没连接", 1000).show();
-                    return;
-                }
-                String zhengPianzhi = et_set_pianzhi.getText().toString();
+                String zhengPianzhi = fillString(et_set_pianzhi.getText().toString(), 4);
                 if (Integer.parseInt(zhengPianzhi) > 1000) {
                     Toast.makeText(MainActivity.this, "请输入 0 ~ 1000 内的整数", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                try {
-                    if (null == _socket) return;
-                    os.write(("SA" + zhengPianzhi).getBytes());
-                    os.flush();
-                } catch (IOException e) {
-                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
-                }
-
-                StringBuilder sbZhengPianzhi = new StringBuilder(zhengPianzhi);
-                sbZhengPianzhi.insert(2, ".");
-                String newZhengPianzhi = sbZhengPianzhi.toString();
-                Toast.makeText(MainActivity.this, "设定了正偏置：" + newZhengPianzhi, Toast.LENGTH_SHORT).show();
+                sendOrder("SA" + zhengPianzhi);
                 break;
+
+            //TODO:设定了负偏置
             case R.id.btn_set_fu_pianzhi:
-                //TODO:设定了负偏置
-                if (os == null) {
-                    Toast.makeText(this, "蓝牙没连接", 1000).show();
-                    return;
-                }
-                String fuPianzhi = et_set_pianzhi.getText().toString();
+                String fuPianzhi = fillString(et_set_pianzhi.getText().toString(), 4);
                 if (Integer.parseInt(fuPianzhi) > 1000) {
                     Toast.makeText(MainActivity.this, "请输入 0 ~ 1000 内的整数", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                try {
-                    if (null == _socket) return;
-                    os.write(("SA-" + fuPianzhi).getBytes());
-                    os.flush();
-                } catch (IOException e) {
-                    Log.i(TAG, "onClick: 报错：" + e.getMessage());
-                }
+                sendOrder("SA-" + fuPianzhi);
+                break;
 
-                StringBuilder sbFuPianzhi = new StringBuilder(fuPianzhi);
-                sbFuPianzhi.insert(2, ".");
-                String newFuPianzhi = sbFuPianzhi.toString();
-                Toast.makeText(MainActivity.this, "设定了负偏置：- " + newFuPianzhi, Toast.LENGTH_SHORT).show();
-                break;
-            case R.id.btn_get_temp:
-                //TODO:获取环境温度
-                Toast.makeText(MainActivity.this, "获取环境温度", Toast.LENGTH_SHORT).show();
-                break;
-            case R.id.btn_get_pianzhi:
-                //TODO:获取温度偏置量
-                Toast.makeText(MainActivity.this, "获取温度偏置量：", Toast.LENGTH_SHORT).show();
-                break;
-            case R.id.btn_get_pid:
-                //TODO:获取 PID 参数
-                Toast.makeText(MainActivity.this, "获取 PID 参数：", Toast.LENGTH_SHORT).show();
-                break;
+
+            //TODO:重置 PID 参数
             case R.id.btn_reset_pid:
-                //TODO:重置 PID 参数
-                Toast.makeText(MainActivity.this, "重置了 PID 参数：", Toast.LENGTH_SHORT).show();
+                sendOrder("SF");
+                break;
+
+            //TODO:获取 PID 参数
+            case R.id.btn_get_pid:
+                sendOrder("RF");
+                break;
+
+            //TODO:获取温度偏置量
+            case R.id.btn_get_pianzhi:
+                sendOrder("RA");
+                break;
+
+            //TODO:获取环境温度
+            case R.id.btn_get_temp:
+                sendOrder("RC");
                 break;
             default:
                 break;
+        }
+    }
+
+
+    /**
+     * 发送指定命令
+     *
+     * @param msg 指定的命令
+     */
+    public void sendOrder(String msg) {
+        if (null == os || null == _socket) {
+            Toast.makeText(this, "蓝牙没连接", 1000).show();
+            return;
+        }
+        try {
+            os.write(msg.getBytes());
+            os.flush();
+        } catch (IOException e) {
+            Log.i(TAG, "sendOrder:" + msg + " 报错：" + e.getMessage());
         }
     }
 
@@ -476,7 +425,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (_bluetoothAdapter.isDiscovering()) _bluetoothAdapter.cancelDiscovery();
         //打包log.i(TAG, "connectHC05: 搜索？" + (_bluetoothAdapter.isDiscovering()));
         if (_device == null) {
-            _device = _bluetoothAdapter.getRemoteDevice(HC05SAddress);
+            try {
+                _device = _bluetoothAdapter.getRemoteDevice(HC05SAddress);
+            } catch (Exception e) {
+                Message msg = new Message();
+                msg.what = TOAST;
+                msg.obj = "蓝牙地址输入有误！";
+                handler.sendMessage(msg);
+                isStop = true;
+                return;
+            }
         }
         try {
             if (_socket == null)
@@ -559,9 +517,43 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         private void doWork() {
             Log.i(TAG, "进入 doWork: ");
             if (_socket != null) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //读取
+                        try {
+                            FileInputStream fis = openFileInput("blue_tooth_adress.txt");
+                            InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
+                            char[] input = new char[fis.available()];  //available()用于获取filename内容的长度
+                            isr.read(input);  //读取并存储到input中
+
+                            isr.close();
+                            fis.close();//读取完成后关闭
+
+                            String str = new String(input); //将读取并存放在input中的数据转换成String输出
+                            autoStrings = oneClear(str.split("\n"));
+
+                        } catch (Exception e) {
+                        }
+
+                        if (null != autoStrings && !Arrays.asList(autoStrings).contains(et_bluetooth_ip.getText().toString())) {
+                            try {
+                                FileOutputStream fos = openFileOutput("blue_tooth_adress.txt", Context.MODE_APPEND);
+                                OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");
+                                osw.write(et_bluetooth_ip.getText().toString() + "\n");
+                                osw.flush();
+                                fos.close();
+                            } catch (IOException e) {
+                            }
+                        }
+                    }
+                }).start();
+
                 try {
                     os = _socket.getOutputStream();
-                } catch (IOException e) {
+                    sendOrder("Test");
+                } catch (
+                        IOException e) {
                     Log.i(TAG, "doWork: _socket.getOutputStream() 报错：" + e.getMessage());
                 }
 
@@ -569,7 +561,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 try {
                     is = _socket.getInputStream();
-                } catch (IOException e) {
+                } catch (
+                        IOException e) {
                     streamSuccessful = 0;
                     return;
                 }
@@ -582,6 +575,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }
         }
+
     }
 
     @Override
@@ -623,27 +617,94 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         if (time == 0) break;
                         buffer = new byte[time];
                         if (is != null) is.read(buffer);
-                        String receivedMsg = new String(buffer);
-
-
+                        String receivedMsg = new String(buffer,"UTF-8").trim();
+                        Log.i(TAG, "run: 接收到： " + receivedMsg);
                         //TODO:绘图
-                        if (receivedMsg.contains("TEMP")) {
-                            receivedMsg = receivedMsg.replaceAll("TEMP:", "");
-                            float f = Float.parseFloat(receivedMsg);
-                            dynamicLineChartManager1.addEntry(f);
-                        }
-                        if (receivedMsg.contains("POWER")) {
-                            Message msg = new Message();
-                            msg.what = POWER;
-                            msg.obj = receivedMsg.replaceAll("POWER:", "");
-                            handler.sendMessage(msg);
+                        if (receivedMsg.contains("PV:") && receivedMsg.contains("SV:")) {
+                            receivedMsg = receivedMsg.replace(" ", "").replaceAll("PV:", "")
+                                    .replaceAll("SV:", "");//PV:3536SV:3500-657
+                            try {
+                                byte[] be = receivedMsg.getBytes("gbk");
+                                String pv = new String(be, 0, getStrIndex(be, 4), "gbk");
+                                receivedMsg = receivedMsg.replace(pv, "");
+                                be = receivedMsg.getBytes("gbk");
+                                float pvFloat = Float.parseFloat(insertPoint(pv, 2));
+
+                                String sv = new String(be, 0, getStrIndex(be, 4), "gbk");
+                                float svFloat = Float.parseFloat(insertPoint(sv, 2));
+
+                                list.add(pvFloat);
+                                list.add(svFloat);
+                                dynamicLineChartManager1.addEntry(list);
+                                list.clear();
+
+                                receivedMsg = receivedMsg.replace(sv, "");
+                                String pw = receivedMsg.replaceAll(sv, "");
+                                Message msg = new Message();
+                                msg.what = POWER;
+                                msg.obj = insertPoint(pw, 1);
+                                handler.sendMessage(msg);
+                                Log.i(TAG, "run: pv = " + pvFloat + " ; sv = " + svFloat + " ; pw = " + msg.obj);
+                            } catch (UnsupportedEncodingException e) {
+                                System.out.println("报错:" + e.getMessage());
+                            }
+                            continue;
                         }
 
-                        if (receivedMsg.contains("CPV:")) {
+                        //一定放在上面！
+                        if (receivedMsg.contains("P:") && receivedMsg.contains("I:") && receivedMsg.contains("D:")) {
                             Message msg = new Message();
-                            msg.what = RC;
-                            msg.obj = receivedMsg.replaceAll("CPV:", "");
+                            msg.what = RF;
+                            msg.obj = receivedMsg.replace("P:", "").replace("I", "").replace("D", "");
                             handler.sendMessage(msg);
+                            continue;
+                        }
+                        if (receivedMsg.contains("P:")) {
+                            receivedMsg = receivedMsg.replace(" ", "").replaceAll("P:", "");
+
+                            receivedMsg = insertPoint(receivedMsg, 1);
+
+                            Message msg = new Message();
+                            msg.what = TOAST;
+                            msg.obj = "P 参数设置为：" + receivedMsg;
+                            handler.sendMessage(msg);
+                            continue;
+                        }
+                        if (receivedMsg.contains("I:")) {
+                            receivedMsg = receivedMsg.replace(" ", "").replaceAll("I:", "");
+
+                            receivedMsg = insertPoint(receivedMsg, 1);
+
+                            Message msg = new Message();
+                            msg.what = TOAST;
+                            msg.obj = "I 参数设置为：" + receivedMsg;
+                            handler.sendMessage(msg);
+                            continue;
+                        }
+                        if (receivedMsg.contains("D:")) {
+                            receivedMsg = receivedMsg.replace(" ", "").replaceAll("D:", "");
+
+                            receivedMsg = insertPoint(receivedMsg, 1);
+
+                            Message msg = new Message();
+                            msg.what = TOAST;
+                            msg.obj = "D 参数设置为：" + receivedMsg;
+                            handler.sendMessage(msg);
+                            continue;
+                        }
+                        if (receivedMsg.contains("Temp-Offset Set")) {
+                            Message msg = new Message();
+                            msg.what = TOAST;
+                            msg.obj = "温度偏量设置成功";
+                            handler.sendMessage(msg);
+                            continue;
+                        }
+                        if (receivedMsg.contains("PID reset")) {
+                            Message msg = new Message();
+                            msg.what = TOAST;
+                            msg.obj = "PID 参数设置为出厂值";
+                            handler.sendMessage(msg);
+                            continue;
                         }
 
                         if (receivedMsg.contains("Offset Temp:")) {
@@ -651,22 +712,44 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             msg.what = RA;
                             msg.obj = receivedMsg.replaceAll("Offset Temp:", "");
                             handler.sendMessage(msg);
+                            continue;
                         }
-
-                        if (receivedMsg.contains("P:")&&receivedMsg.contains("I:")&&receivedMsg.contains("D:")) {
+                        if (receivedMsg.contains("CPV:")) {
                             Message msg = new Message();
-                            msg.what = RF;
-                            msg.obj = receivedMsg.replace("P:","").replace("I","").replace("D","");
+                            msg.what = RC;
+                            msg.obj = receivedMsg.replaceAll("CPV:", "");
                             handler.sendMessage(msg);
+                            continue;
                         }
-
                     }
                 } catch (IOException e) {
+                    Log.i(TAG, "run: 循环接受报错：" + e.getMessage());
                     break;
                 }
             }
         }
     };
+
+    /**
+     * 根据长度截取 String
+     *
+     * @param be String 的数组
+     * @param i  指定的长度
+     * @return
+     */
+    public int getStrIndex(byte[] be, int i) {
+        //截取字节长度必须小于字符串字节长度
+        if (i < be.length) {
+            //asi小于0 则递归
+            if (be[i] < 0) {
+                i--;
+                if (i > 0) {
+                    getStrIndex(be, i);
+                }
+            }
+        }
+        return i;
+    }
 
     StringBuilder sb = new StringBuilder("temp");
     String marStrNew;
@@ -678,20 +761,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     tv_power.setText(msg.obj.toString());
                     break;
                 case RC:
-                    et_set_temp.setText(msg.obj.toString());
-                    /*sb = new StringBuilder(msg.obj.toString());
-                    sb.insert(2, ".");
-                    marStrNew = sb.toString();
-                    et_popup_item_order.setText(marStrNew + "℃");*/
+                    et_set_temp.setText(fillString(msg.obj.toString(), 4));
                     break;
                 case RA:
-                    et_set_pianzhi.setText(msg.obj.toString());
+                    et_set_pianzhi.setText(fillString(msg.obj.toString(), 4));
                     break;
                 case RF:
                     String[] strs = msg.obj.toString().split(":");
-                    et_set_p_para.setText(strs[0]);
-                    et_set_i_para.setText(strs[1]);
-                    et_set_d_para.setText(strs[2]);
+                    et_set_p_para.setText(fillString(strs[0], 3));
+                    et_set_i_para.setText(fillString(strs[1], 3));
+                    et_set_d_para.setText(fillString(strs[2], 3));
+                    break;
+                case TOAST:
+                    Toast.makeText(MainActivity.this, msg.obj.toString(), Toast.LENGTH_SHORT).show();
                     break;
                 default:
                     break;
@@ -703,6 +785,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int RC = 5;
     private static final int RA = 6;
     private static final int RF = 7;
+    private static final int TOAST = 8;
 
     private BlueToothReceiver mReceiver = new BlueToothReceiver() {
         @Override
@@ -722,6 +805,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public String formatAddress(String newAddress) {
         if (TextUtils.isEmpty(newAddress)) return null;
+        if (newAddress.contains(":")) return newAddress;
         String result = "";
         for (int i = 0; i < newAddress.length(); i++) {
             result += newAddress.charAt(i);
@@ -731,5 +815,75 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         Log.i(TAG, "格式化后的地址格式：" + result);
         return result;
+    }
+
+    /**
+     * 插入小数点
+     *
+     * @param msg        原数据 如 3665
+     * @param xiaoshuwei 小数位数：如果为 2 ；则 36.65；如果为 1 ；则 366.5
+     */
+    public String insertPoint(String msg, int xiaoshuwei) {
+        StringBuilder sb = new StringBuilder(msg);
+        sb.insert(msg.length() - xiaoshuwei, ".");
+        marStrNew = sb.toString();
+        return marStrNew;
+    }
+
+    /**
+     * 根据指定长度填充 String
+     *
+     * @param res          eg:12
+     * @param targetLength eg:4
+     * @return eg:0012
+     */
+    public static String fillString(String res, int targetLength) {
+        if (res.length() >= targetLength) return res;
+        int resLen = res.length();
+        for (int i = 0; i < targetLength - resLen; i++) {
+            res = "0" + res;
+        }
+        return res;
+    }
+
+    public String getString(InputStream inputStream) {
+        InputStreamReader inputStreamReader = null;
+        try {
+            inputStreamReader = new InputStreamReader(inputStream, "gbk");
+        } catch (UnsupportedEncodingException e1) {
+            e1.printStackTrace();
+        }
+        BufferedReader reader = new BufferedReader(inputStreamReader);
+        StringBuffer sb = new StringBuffer("");
+        String line;
+        try {
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+                sb.append("\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 数组元素去重
+     *
+     * @param arr 待去重元素
+     * @return
+     */
+    public String[] oneClear(String[] strs) {
+        List<String> list = new ArrayList<>();
+        for (int i = 0; i < strs.length; i++) {
+            if (!list.contains(strs[i])) {
+                list.add(strs[i]);
+            }
+        }
+        String[] newStrs = new String[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            newStrs[i] = list.get(i);
+        }
+        return newStrs;
     }
 }

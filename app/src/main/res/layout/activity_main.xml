@@ -90,7 +90,8 @@
                 <Button
                     android:id="@+id/btn_connect_bluetooth"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
                     android:layout_weight="1"
                     android:text="连接"
                     android:textSize="18sp" />
@@ -124,14 +125,14 @@
                 <Button
                     android:id="@+id/btn_set_zheng_temp"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="match_parent"
                     android:text="设定正温度"
                     android:textSize="18sp" />
 
                 <Button
                     android:id="@+id/btn_set_fu_temp"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="match_parent"
                     android:text="设定负温度"
                     android:textSize="18sp" />
             </LinearLayout>
@@ -202,7 +203,7 @@
                 <Button
                     android:id="@+id/btn_set_p_para"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="match_parent"
                     android:text="设定 P"
                     android:textSize="18sp" />
 
@@ -235,7 +236,7 @@
                 <Button
                     android:id="@+id/btn_set_i_para"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="match_parent"
                     android:text="设定 I"
                     android:textSize="18sp" />
 
@@ -269,7 +270,7 @@
                 <Button
                     android:id="@+id/btn_set_d_para"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="match_parent"
                     android:text="设定 D"
                     android:textSize="18sp" />
 

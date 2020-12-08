@@ -1,5 +1,10 @@
 package com.example.bluetoothtemperaturecontrol;
 
+import android.icu.text.DecimalFormat;
+import android.os.Build;
+
+import androidx.annotation.RequiresApi;
+
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.AxisBase;
 import com.github.mikephil.charting.components.Description;
@@ -11,7 +16,10 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.IAxisValueFormatter;
+import com.github.mikephil.charting.formatter.IValueFormatter;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.utils.ViewPortHandler;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -122,25 +130,33 @@ public class DynamicLineChartManager {
         for (int i = 0; i < names.size(); i++) {
             lineDataSet = new LineDataSet(null, names.get(i));
             lineDataSet.setColor(colors.get(i));
-            lineDataSet.setLineWidth(1.5f);
-            lineDataSet.setCircleRadius(1.5f);
+            lineDataSet.setLineWidth(1.0f);
+            lineDataSet.setCircleRadius(1.0f);
             lineDataSet.setColor(colors.get(i));
 
             lineDataSet.setDrawFilled(true);
             lineDataSet.setCircleColor(colors.get(i));
             lineDataSet.setHighLightColor(colors.get(i));
+            //曲线连接
             lineDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
             lineDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
             lineDataSet.setValueTextSize(10f);
+            lineDataSet.setValueFormatter(new MyValueFormatter());
             lineDataSets.add(lineDataSet);
-
         }
         //添加一个空的 LineData
         lineData = new LineData();
         lineChart.setData(lineData);
         lineChart.invalidate();
     }
-
+    class  MyValueFormatter extends ValueFormatter implements IValueFormatter {
+        @RequiresApi(api = Build.VERSION_CODES.N)
+        public String getFormattedValue(float value, Entry entry, int dataSetIndex, ViewPortHandler viewPortHandler) {
+            DecimalFormat df = new DecimalFormat("#.00");
+            return df.format(value);
+            //return "10";
+        }
+    }
     /**
      * 动态添加数据（一条折线图）
      *
@@ -176,7 +192,31 @@ public class DynamicLineChartManager {
      *
      * @param numbers
      */
-    public void addEntry(List<Integer> numbers) {
+    /*public void addEntry(List<Integer> numbers) {
+
+        if (lineDataSets.get(0).getEntryCount() == 0) {
+            lineData = new LineData(lineDataSets);
+            lineChart.setData(lineData);
+        }
+        if (timeList.size() > 11) {
+            timeList.clear();
+        }
+        timeList.add(df.format(System.currentTimeMillis()));
+        for (int i = 0; i < numbers.size(); i++) {
+            Entry entry = new Entry(lineDataSet.getEntryCount(), numbers.get(i));
+            lineData.addEntry(entry, i);
+            lineData.notifyDataChanged();
+            lineChart.notifyDataSetChanged();
+            lineChart.setVisibleXRangeMaximum(6);
+            lineChart.moveViewToX(lineData.getEntryCount() - 5);
+        }
+    }*/
+    /**
+     * 动态添加数据（多条折线图）
+     *
+     * @param numbers
+     */
+    public void addEntry(List<Float> numbers) {
 
         if (lineDataSets.get(0).getEntryCount() == 0) {
             lineData = new LineData(lineDataSets);
@@ -264,5 +304,4 @@ public class DynamicLineChartManager {
         lineChart.setDescription(description);
         lineChart.invalidate();
     }
-
 }
