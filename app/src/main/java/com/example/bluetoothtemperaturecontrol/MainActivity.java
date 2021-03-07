@@ -6,6 +6,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -13,6 +14,7 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.AsyncTask;
@@ -30,9 +32,12 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.bluetoothtemperaturecontrol.DynamicLineChartManager;
 import com.example.bluetoothtemperaturecontrol.view.PasswordInputView;
 import com.github.mikephil.charting.charts.LineChart;
 
@@ -59,7 +64,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends Activity implements View.OnClickListener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     /**
@@ -70,15 +75,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private List<Float> list = new ArrayList<>(); //数据集合
     private List<String> names = new ArrayList<>(); //折线名字集合
     private List<Integer> colour = new ArrayList<>();//折线颜色集合
-    private EditText et_popup_item_order;
-    private AutoCompleteTextView et_bluetooth_ip;
+    private EditText et_popup_item_order, et_bluetooth_ip, et_set_temp_buchang, et_set_temp_max, et_set_temp_min;
     private PasswordInputView et_set_temp, et_set_p_para, et_set_i_para, et_set_d_para, et_set_pianzhi;
     private TextView tv_power;
+    private ImageView iv_setting;
+    private LinearLayout ll_set_temp;
 
     /**
      * 蓝牙相关
      */
-    private Button btn_send_order, btn_connect_bluetooth, btn_set_zheng_temp, btn_set_fu_temp,
+    private Button btn_send_order, btn_connect_bluetooth, btn_set_temp_commit,
+            btn_set_zheng_temp, btn_set_fu_temp,
             btn_set_p_para, btn_set_i_para, btn_set_d_para, btn_set_zheng_pianzhi, btn_set_fu_pianzhi,
             btn_get_temp, btn_get_pianzhi, btn_get_pid, btn_reset_pid;
     private BluetoothAdapter _bluetoothAdapter;
@@ -87,6 +94,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     //Dell: 34-23-87-40-73-04
     private String HC05SAddress = "14:A3:2F:63:EB:FA";
+    private float tempMax = 100F, tempMin = 0F;
+    private int tempBuchang = 10;
     private BluetoothSocket _socket = null;      //蓝牙通信socket
     private static int connectSuccessful;//判断蓝牙接口
     private final static String MY_UUID = "00001101-0000-1000-8000-00805F9B34FB";   //SPP服务UUID号
@@ -98,7 +107,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String date, time;
     private boolean bThread = false;
     private OutputStream os = null;
-    private String[] autoStrings;
+    private SharedPreferences sharedPreferences;
+    private SharedPreferences.Editor editor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,6 +119,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initBlueTooth();
 
         registerReceiver(mReceiver, new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED));
+
+        //调整到 点击连接后
         dTask = new DownloadTask();
         dTask.execute(100);
 
@@ -155,57 +167,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //colour.add(Color.RED);
 
         dynamicLineChartManager1 = new DynamicLineChartManager(mChart1, names, colour);
-        dynamicLineChartManager1.setYAxis(100, 0, 10);
+
+        tempMax = sharedPreferences.getFloat("tempMax", 100F);
+        tempMin = sharedPreferences.getFloat("tempMin", 0F);
+        tempBuchang = sharedPreferences.getInt("tempBuchang", 10);
+
+        dynamicLineChartManager1.setYAxis(tempMax, tempMin, tempBuchang);
     }
 
     private void findViews() {
         setContentView(R.layout.activity_main);
 
         tv_power = findViewById(R.id.tv_power);
-        et_bluetooth_ip = (AutoCompleteTextView) findViewById(R.id.et_bluetooth_ip);
+        et_bluetooth_ip = findViewById(R.id.et_bluetooth_ip);
+        iv_setting = findViewById(R.id.iv_setting);
+        iv_setting.setOnClickListener(this);
 
         et_set_temp = findViewById(R.id.et_set_temp);
         et_set_p_para = findViewById(R.id.et_set_p_para);
         et_set_i_para = findViewById(R.id.et_set_i_para);
         et_set_d_para = findViewById(R.id.et_set_d_para);
         et_set_pianzhi = findViewById(R.id.et_set_pianzhi);
-
-        //读取
-        try {
-            FileInputStream fis = openFileInput("blue_tooth_adress.txt");
-            InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
-            char[] input = new char[fis.available()];  //available()用于获取filename内容的长度
-            isr.read(input);  //读取并存储到input中
-
-            isr.close();
-            fis.close();//读取完成后关闭
-
-            String str = new String(input); //将读取并存放在input中的数据转换成String输出
-            try {
-                autoStrings = oneClear(str.split("\n"));
-            } catch (Exception e) {
-            }
-            if (TextUtils.isEmpty(str) || null == str) {
-                //写入
-                try {
-                    FileOutputStream fos = openFileOutput("blue_tooth_adress.txt", Context.MODE_APPEND);
-                    OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");
-                    osw.write("34:23:87:40:73:04\n" +
-                            "14:A3:2F:63:EB:FA\n");
-                    osw.flush();
-                    osw.close();
-                    autoStrings = new String[]{"34:23:87:40:73:04\n", "14:A3:2F:63:EB:FA\n"};
-                } catch (IOException e) {
-                }
-            }
-        } catch (IOException e) {
-        }
-
-        //autoStrings = new String[]{"14:A3:2F:63:EB:FA","34:23:87:40:73:04"};
-        // 第二个参数表示适配器的下拉风格
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(MainActivity.this,
-                android.R.layout.simple_dropdown_item_1line, autoStrings);
-        et_bluetooth_ip.setAdapter(adapter);
 
         btn_connect_bluetooth = findViewById(R.id.btn_connect_bluetooth);
         btn_set_zheng_temp = findViewById(R.id.btn_set_zheng_temp);
@@ -237,6 +219,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         et_popup_item_order = findViewById(R.id.et_popup_item_order);
         btn_send_order = findViewById(R.id.btn_send_order);
         btn_send_order.setOnClickListener(this);
+
+        et_set_temp_buchang = findViewById(R.id.et_set_temp_buchang);
+        et_set_temp_max = findViewById(R.id.et_set_temp_max);
+        et_set_temp_min = findViewById(R.id.et_set_temp_min);
+        ll_set_temp = findViewById(R.id.ll_set_temp);
+
+        btn_set_temp_commit = findViewById(R.id.btn_set_temp_commit);
+
+        btn_set_temp_commit.setOnClickListener(this);
+
+
+        sharedPreferences = getSharedPreferences("bluetooth", MODE_PRIVATE);
+        editor = sharedPreferences.edit();
+        HC05SAddress = sharedPreferences.getString("address", "14:A3:2F:63:EB:FA");
+        et_bluetooth_ip.setText(HC05SAddress);
     }
 
 
@@ -248,13 +245,40 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
+            case R.id.btn_set_temp_commit:
+                try {
+                    tempMax = Float.parseFloat(et_set_temp_max.getText().toString());
+                    tempMin = Float.parseFloat(et_set_temp_min.getText().toString());
+                    tempBuchang = (int) ((tempMax - tempMin) / Integer.parseInt(et_set_temp_buchang.getText().toString()));
+                    //tempBuchang = Integer.parseInt(et_set_temp_buchang.getText().toString());
 
+                    editor.putFloat("tempMax", tempMax);
+                    editor.putFloat("tempMin", tempMin);
+                    editor.putInt("tempBuchang", tempBuchang);
+                    editor.apply();
+                    editor.commit();
+                    if (ll_set_temp.getVisibility() != View.GONE)
+                        ll_set_temp.setVisibility(View.GONE);
+                } catch (Exception e) {
+                    Toast.makeText(this, "非法输入将导致手机爆炸！\n请谨慎操作！", Toast.LENGTH_LONG).show();
+                }
+                break;
+            case R.id.iv_setting:
+                if (ll_set_temp.getVisibility() == View.VISIBLE) {
+                    ll_set_temp.setVisibility(View.GONE);
+                } else {
+                    ll_set_temp.setVisibility(View.VISIBLE);
+                }
+                break;
             case R.id.btn_connect_bluetooth:
-                HC05SAddress = formatAddress(et_bluetooth_ip.getText().toString());
-                if (HC05SAddress.length() != 17) {
+                String temp = et_bluetooth_ip.getText().toString().replaceAll("：", ":");
+                if (temp.length() < HC05SAddress.length()) {
                     Toast.makeText(MainActivity.this, "蓝牙物理地址输入有误！", Toast.LENGTH_SHORT).show();
                     break;
                 }
+                Message.obtain(handler, CONNECT, "请等待").sendToTarget();
+
+                HC05SAddress = temp;
                 et_bluetooth_ip.setText(HC05SAddress);
                 et_bluetooth_ip.setSelection(HC05SAddress.length());
                 is = null;
@@ -344,21 +368,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             //TODO:重置 PID 参数
             case R.id.btn_reset_pid:
                 sendOrder("SF");
+                Message.obtain(handler,TOAST,"已发送重置PID命令").sendToTarget();
                 break;
 
             //TODO:获取 PID 参数
             case R.id.btn_get_pid:
                 sendOrder("RF");
+                Message.obtain(handler,TOAST,"已发送获取PID请求").sendToTarget();
                 break;
 
             //TODO:获取温度偏置量
             case R.id.btn_get_pianzhi:
                 sendOrder("RA");
+                Message.obtain(handler,TOAST,"已发送当前温度偏置量请求").sendToTarget();
                 break;
 
             //TODO:获取环境温度
             case R.id.btn_get_temp:
                 sendOrder("RC");
+                Message.obtain(handler,TOAST,"已发送当前环境温度请求").sendToTarget();
                 break;
             default:
                 break;
@@ -419,6 +447,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void connectHC05() {
+        Message.obtain(handler, CONNECT, "连接中").sendToTarget();
         while (!_bluetoothAdapter.isEnabled()) {
         }
 
@@ -426,6 +455,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //打包log.i(TAG, "connectHC05: 搜索？" + (_bluetoothAdapter.isDiscovering()));
         if (_device == null) {
             try {
+
                 _device = _bluetoothAdapter.getRemoteDevice(HC05SAddress);
             } catch (Exception e) {
                 Message msg = new Message();
@@ -453,6 +483,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             _socket.connect();
             connectSuccessful = 1;
             Log.i(TAG, "1 连接成功");
+            Message.obtain(handler, TOAST, "蓝牙连接成功!").sendToTarget();
+            Message.obtain(handler, CONNECT, "连接").sendToTarget();
+
+            editor.putString("address", HC05SAddress);
+            editor.apply();
+            editor.commit();
+
         } catch (IOException connectException) {
             connectSuccessful = 3;
             try {
@@ -490,6 +527,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         protected String doInBackground(Integer... params) {
             while (connectSuccessful != 1) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 connectHC05();
                 if (isStop) break;
             }
@@ -517,38 +559,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         private void doWork() {
             Log.i(TAG, "进入 doWork: ");
             if (_socket != null) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        //读取
-                        try {
-                            FileInputStream fis = openFileInput("blue_tooth_adress.txt");
-                            InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
-                            char[] input = new char[fis.available()];  //available()用于获取filename内容的长度
-                            isr.read(input);  //读取并存储到input中
-
-                            isr.close();
-                            fis.close();//读取完成后关闭
-
-                            String str = new String(input); //将读取并存放在input中的数据转换成String输出
-                            autoStrings = oneClear(str.split("\n"));
-
-                        } catch (Exception e) {
-                        }
-
-                        if (null != autoStrings && !Arrays.asList(autoStrings).contains(et_bluetooth_ip.getText().toString())) {
-                            try {
-                                FileOutputStream fos = openFileOutput("blue_tooth_adress.txt", Context.MODE_APPEND);
-                                OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");
-                                osw.write(et_bluetooth_ip.getText().toString() + "\n");
-                                osw.flush();
-                                fos.close();
-                            } catch (IOException e) {
-                            }
-                        }
-                    }
-                }).start();
-
                 try {
                     os = _socket.getOutputStream();
                     sendOrder("Test");
@@ -617,7 +627,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         if (time == 0) break;
                         buffer = new byte[time];
                         if (is != null) is.read(buffer);
-                        String receivedMsg = new String(buffer,"UTF-8").trim();
+                        String receivedMsg = new String(buffer, "UTF-8").trim();
                         Log.i(TAG, "run: 接收到： " + receivedMsg);
                         //TODO:绘图
                         if (receivedMsg.contains("PV:") && receivedMsg.contains("SV:")) {
@@ -775,6 +785,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 case TOAST:
                     Toast.makeText(MainActivity.this, msg.obj.toString(), Toast.LENGTH_SHORT).show();
                     break;
+                case CONNECT:
+                    btn_connect_bluetooth.setText(msg.obj.toString());
+                    break;
                 default:
                     break;
             }
@@ -786,6 +799,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int RA = 6;
     private static final int RF = 7;
     private static final int TOAST = 8;
+    private static final int CONNECT = 9;
 
     private BlueToothReceiver mReceiver = new BlueToothReceiver() {
         @Override
@@ -802,20 +816,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             dTask.execute(100);
         }
     };
-
-    public String formatAddress(String newAddress) {
-        if (TextUtils.isEmpty(newAddress)) return null;
-        if (newAddress.contains(":")) return newAddress;
-        String result = "";
-        for (int i = 0; i < newAddress.length(); i++) {
-            result += newAddress.charAt(i);
-            if (i % 2 != 0 && i < newAddress.length() - 1) {//偶！数！位！最后一个位置不补 :
-                result += ":";
-            }
-        }
-        Log.i(TAG, "格式化后的地址格式：" + result);
-        return result;
-    }
 
     /**
      * 插入小数点
@@ -870,7 +870,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     /**
      * 数组元素去重
      *
-     * @param arr 待去重元素
+     * @param strs 待去重元素
      * @return
      */
     public String[] oneClear(String[] strs) {

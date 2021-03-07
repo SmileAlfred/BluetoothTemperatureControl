@@ -6,14 +6,79 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="#10000000"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        tools:ignore="MissingConstraints">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:text="温控设备专用软件"
+            android:textColor="#000000"
+            android:textSize="20sp" />
+
+        <ImageView
+            android:id="@+id/iv_setting"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:src="@drawable/setting" />
+    </LinearLayout>
+
     <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_marginTop="52dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/ll_set_temp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="10dp">
+
+                <EditText
+                    android:id="@+id/et_set_temp_max"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="请输入温度的最大值：100"
+                    android:inputType="number"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/et_set_temp_min"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="请输入温度的最小值：0"
+                    android:inputType="number"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/et_set_temp_buchang"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="请输入温度变化间隔：10"
+                    android:inputType="number"
+                    android:textSize="16sp" />
+
+                <Button
+                    android:id="@+id/btn_set_temp_commit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="确认"
+                    android:textSize="18sp" />
+            </LinearLayout>
 
             <com.github.mikephil.charting.charts.LineChart
                 android:id="@+id/dynamic_chart1"
@@ -29,11 +94,11 @@
                 <Button
                     android:id="@+id/btn_add_entry"
                     android:layout_width="0dp"
-                    android:visibility="gone"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:onClick="addEntry"
-                    android:text="随机数据" />
+                    android:text="随机数据"
+                    android:visibility="gone" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -78,21 +143,21 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <AutoCompleteTextView
+                <EditText
                     android:id="@+id/et_bluetooth_ip"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_margin="6dp"
                     android:layout_weight="2"
-                    android:hint="蓝牙物理地址 如\n14A32F63EBFA"
+                    android:hint="请输入蓝牙物理地址"
                     android:textSize="18sp" />
 
                 <Button
                     android:id="@+id/btn_connect_bluetooth"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:padding="5dp"
                     android:layout_weight="1"
+                    android:padding="5dp"
                     android:text="连接"
                     android:textSize="18sp" />
             </LinearLayout>
@@ -148,9 +213,9 @@
                     android:id="@+id/et_set_pianzhi"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
-                    android:inputType="number"
                     android:layout_weight="1"
                     android:background="@null"
+                    android:inputType="number"
                     android:padding="1dp"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
@@ -186,10 +251,10 @@
                 <com.example.bluetoothtemperaturecontrol.view.PasswordInputView
                     android:id="@+id/et_set_p_para"
                     android:layout_width="0dp"
-                    android:inputType="number"
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:background="@null"
+                    android:inputType="number"
                     android:padding="1dp"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
@@ -220,9 +285,9 @@
                     android:id="@+id/et_set_i_para"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
-                    android:inputType="number"
                     android:layout_weight="1"
                     android:background="@null"
+                    android:inputType="number"
                     android:padding="1dp"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
@@ -255,8 +320,8 @@
                     android:layout_width="0dp"
                     android:layout_height="40dp"
                     android:layout_weight="1"
-                    android:inputType="number"
                     android:background="@null"
+                    android:inputType="number"
                     android:padding="1dp"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
@@ -285,26 +350,32 @@
 
                 <Button
                     android:id="@+id/btn_reset_pid"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="40dp"
+                    android:layout_weight="1"
                     android:text="重置PID"
                     android:textSize="18sp" />
 
                 <Button
                     android:id="@+id/btn_get_pid"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="40dp"
+                    android:layout_weight="1"
                     android:text="获取PID"
                     android:textSize="18sp" />
+
                 <Button
                     android:id="@+id/btn_get_pianzhi"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
+                    android:layout_weight="1.2"
                     android:layout_height="40dp"
                     android:text="获取偏置量"
                     android:textSize="18sp" />
+
                 <Button
                     android:id="@+id/btn_get_temp"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
                     android:layout_height="40dp"
                     android:text="获取温度"
                     android:textSize="18sp" />
